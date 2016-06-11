@@ -1,0 +1,18 @@
+package main
+
+type YaspPEG Peg {
+  Parsing
+}
+
+start <- WS? expr (WS expr)* WS? !.
+
+expr <- ID
+      / NUMBER
+      / openBrace WS? expr? (WS expr)* WS? closeBrace
+
+openBrace <- '(' { p.OpenBrace() }
+closeBrace <- ')' { p.CloseBrace() }
+
+ID <- < [[a-z_\-+*/!@#$%^&'<>]] [[a-z_\-+*/!@#$%^&'0-9]]* > { p.AddID(buffer[begin:end]) }
+NUMBER <- < [0-9]+ > { p.AddNumber(buffer[begin:end]) }
+WS <- ( ' ' / '\t' / '\r' / '\n' )+
