@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+  "bufio"
+  "os"
+  "bytes"
 )
 
 func parseAndEvaluate(expr string) *Value {
@@ -13,13 +16,35 @@ func parseAndEvaluate(expr string) *Value {
     log.Fatal(err)
   }
   yaspPeg.Execute()
-	return yaspPeg.Evaluate()
+	return yaspPeg.Evaluate(EmptyEvaluationContext())
 }
 
 func main() {
-  //yaspPeg := &YaspPEG{Buffer: "(+ (* 2 2) 2)"}
-  //expr := "(if 42 (print 13) (print 79))"
-  expr := "(print 42) (print 78)"
+  var buffer bytes.Buffer
 
-	fmt.Printf("%v = %v\n", expr, parseAndEvaluate(expr))
+  scanner := bufio.NewScanner(os.Stdin)
+  scanner.Split(bufio.ScanBytes)
+
+  for scanner.Scan() {
+    buffer.WriteString(scanner.Text())
+  }
+
+  source := buffer.String()
+
+  //parseAndEvaluate(source)
+  yaspPeg := &YaspPEG{Buffer: source}
+  yaspPeg.Init()
+  yaspPeg.Parsing.Init()
+  if err := yaspPeg.Parse(); err != nil {
+    log.Fatal(err)
+  }
+  yaspPeg.Execute()
+
+  context := EmptyEvaluationContext()
+
+  yaspPeg.Evaluate(context)
+
+  fmt.Printf("%v\n", context.vars["main"].EvaluateFunction(context, []*Value{&Value{T: TypeString, V: "  (+ 1 2)"}}))
+
+  fmt.Print("done\n")
 }

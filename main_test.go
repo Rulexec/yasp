@@ -30,6 +30,13 @@ func TestRecursion(t *testing.T) {
   AssertNumber(t, expected, actual)
 }
 
+func TestString(t *testing.T) {
+  var expected string = "Hello, World!"
+  actual := parseAndEvaluate("(concat 'Hello, ' 'World!')")
+
+  AssertString(t, expected, actual)
+}
+
 func AssertNumber(t *testing.T, expected uint64, actual *Value) {
   if actual.T != TypeNumber {
     t.Error("Expected TypeNumber, got: ", actual.T)
@@ -39,5 +46,17 @@ func AssertNumber(t *testing.T, expected uint64, actual *Value) {
 
   if n != expected {
     t.Error("Expected ", expected, ", got: ", n)
+  }
+}
+
+func AssertString(t *testing.T, expected string, actual *Value) {
+  if actual.T != TypeString {
+    t.Error("Expected TypeString, got: ", actual.T)
+  }
+
+  s, _ := actual.V.(string)
+
+  if s != expected {
+    t.Error("Expected ", expected, ", got: ", s)
   }
 }

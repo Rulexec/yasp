@@ -8,11 +8,38 @@ start <- WS? expr (WS expr)* WS? !.
 
 expr <- ID
       / NUMBER
+      / STRING
       / openBrace WS? expr? (WS expr)* WS? closeBrace
 
 openBrace <- '(' { p.OpenBrace() }
 closeBrace <- ')' { p.CloseBrace() }
 
-ID <- < [[a-z_\-+*/!@#$%^&'<>]] [[a-z_\-+*/!@#$%^&'0-9]]* > { p.AddID(buffer[begin:end]) }
+ID <- < [[a-z_\-+*/!@#$%^&<>=?]] [[a-z_\-+*/!@#$%^&'"<>=?0-9]]* > { p.AddID(buffer[begin:end]) }
 NUMBER <- < [0-9]+ > { p.AddNumber(buffer[begin:end]) }
+STRING <- '\'' { p.StartString() } ( ESCAPE / < [^'\\]+ > { p.AddCharacter(buffer[begin:end]) } )* '\'' { p.EndString() }
 WS <- ( ' ' / '\t' / '\r' / '\n' )+
+
+# from https://github.com/pointlander/peg/blob/master/peg.peg
+ESCAPE          <- "\\a"                      { p.AddCharacter("\a") }   # bell
+                 / "\\b"                      { p.AddCharacter("\b") }   # bs
+                 / "\\e"                      { p.AddCharacter("\x1B") } # esc
+                 / "\\f"                      { p.AddCharacter("\f") }   # ff
+                 / "\\n"                      { p.AddCharacter("\n") }   # nl
+                 / "\\r"                      { p.AddCharacter("\r") }   # cr
+                 / "\\t"                      { p.AddCharacter("\t") }   # ht
+                 / "\\v"                      { p.AddCharacter("\v") }   # vt
+                 / "\\'"		                  { p.AddCharacter("'") }
+                 / '\\"'		                  { p.AddCharacter("\"") }
+                 / '\\['                      { p.AddCharacter("[") }
+                 / '\\]'                      { p.AddCharacter("]") }
+                 / '\\-'                      { p.AddCharacter("-") }
+                 / '\\' "0x"<[0-9a-fA-F]+>    {
+                     hexa, _ := strconv.ParseInt(text, 16, 32)
+                     p.AddCharacter(string(hexa)) }
+                 / '\\' <[0-3][0-7][0-7]>     {
+                     octal, _ := strconv.ParseInt(text, 8, 8)
+                     p.AddCharacter(string(octal)) }
+                 / '\\' <[0-7][0-7]?>         {
+                     octal, _ := strconv.ParseInt(text, 8, 8)
+                     p.AddCharacter(string(octal)) }
+                 / '\\\\'                     { p.AddCharacter("\\") }

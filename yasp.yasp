@@ -1,0 +1,120 @@
+(defn traverse (f acc lst) (if (empty? lst) acc (f acc (head lst) (fn (newAcc) (traverse f newAcc (tail lst))))))
+
+(defn id (x) x)
+(defn inRange (c start end) (and (>= (ord c) (ord start)) (<= (ord c) (ord end))))
+(defn isDigit (d) (inRange d '0' '9'))
+(defn parseDigit (d) (- (ord d) (ord '0')))
+
+(defn tryParse (pattern text)
+  (let (patternType (head pattern))
+    (switch patternType
+      'single' (let
+        (parser (get 1 pattern)
+         handler (getOrDef id 2 pattern)
+
+         result (parser text)
+         success (get 0 result))
+        (if success (list 1 (get 1 result) (handler (get 2 result))) (list 0))
+      )
+      'and' (let
+        (result (traverse
+           (fn (acc x next) (let
+             (currentText (get 1 acc)
+              parsed (get 2 acc))
+             (switch (typeof x)
+               'string' (if (= (take (len x) currentText) x) (next (list 1 (skip (len x) currentText) (append x parsed))) (list 0))
+               'function' (let
+                 (result (x currentText)
+                  success (get 0 result))
+                 (if success (next (list 1 (get 1 result) (append (get 2 result) parsed))) (list 0))
+               )
+               'list' (let
+                 (result (tryParse x currentText)
+                  success (get 0 result))
+                 (if success (next (list 1 (get 1 result) (append (get 2 result) parsed))) (list 0))
+               ))
+           ))
+           (list 1 text (list))
+           (untail (tail pattern)))
+         success (get 0 result))
+        (if success (list 1 (get 1 result) ((last pattern) (get 2 result))) (list 0)))
+      'or' (let
+        (result (traverse
+           (fn (acc x next)
+             (switch (typeof x)
+               'string' (if (= (take (len x) currentText) x) (list 1 (skip (len x) currentText) (append x parsed)) (next acc))
+               'function' (let
+                 (result (x text)
+                  success (get 0 result))
+                 (if success (list 1 (get 1 result) (get 2 result)) (next acc))
+               )
+               'list' (let
+                 (result (tryParse x text)
+                  success (get 0 result))
+                 (if success (list 1 (get 1 result) (get 2 result)) (next acc))
+               ))
+           )
+           (list 0)
+           (untail (tail pattern)))
+         success (get 0 result))
+        (if success (list 1 (get 1 result) ((last pattern) (get 2 result))) (list 0)))
+      'end' (if (empty? text) (list 1 '' ()) (list 0))
+    )
+  )
+)
+
+(defn headIsWS (text) (in (head text) (list ' ' '\t' '\r' '\n')))
+
+(defn isIdStartSymbol (c)
+  (or (inRange c 'a' 'z')
+      (inRange c 'A' 'Z')
+      (in c (list '_' '-' '+' '*' '/' '!' '@' '#' '$' '%' '^' '&' '\'' '<' '>' '=' '?')))
+)
+(defn isIdSymbol (c) (or (isIdStartSymbol c) (inRange c '0' '9')))
+
+(defn tryParseID (text) (do
+  (defn f (t symbols) (if (and (not (empty? t)) (isIdSymbol (head t))) (f (tail t) (append (head t) symbols)) (list 1 t (listToString symbols))))
+  (if (and (not (empty? text)) (isIdStartSymbol (head text))) (f (tail text) (list (head text))) (list 0))
+))
+(defn tryParseNumber (text) ((defn f (t n success)
+  (if (and (not (empty? t)) (isDigit (head t))) (f (tail t) (+ (* n 10) (parseDigit (head t))) 1) (list success t n))
+) text 0 0))
+
+(defn tryMaybeParse (f) (fn (text) (let (result (f text)) (list 1 (get 1 result) (get 2 result)))))
+
+(defn tryParseWS (text)
+  ((defn f (t success)
+    (if (and (not (empty? t)) (headIsWS t)) (f (tail t) 1) (list success t ()))
+  ) text 0)
+)
+(def tryMaybeParseWS (tryMaybeParse tryParseWS))
+(defn tryMaybeParseWSExpressions (text) (
+  (defn f (currentText parsed) (let
+    (result (tryParse (list 'and' tryParseWS tryParseExpression (fn (p) (get 1 p))) currentText)
+     success (get 0 result))
+    (if success (f (get 1 result) (append (get 2 result) parsed)) (list 1 currentText parsed))
+  ))
+
+  text (list)
+))
+
+(defn tryParseExpression (text) (tryParse
+  (list 'or' (list 'single' tryParseID (fn (parsed) (list 'id' parsed)))
+             (list 'single' tryParseNumber (fn (parsed) (list 'number' parsed)))
+             (list 'and'
+                 '(' tryMaybeParseWS tryParseExpression
+                     tryMaybeParseWSExpressions tryMaybeParseWS ')'
+               (fn (parsed) (list 'list' (prepend (get 2 parsed) (get 3 parsed)))))
+        id)
+  text
+))
+
+(defn tryParseModule (text) (tryParse
+  (list 'and' tryMaybeParseWS tryParseExpression
+              tryMaybeParseWSExpressions tryMaybeParseWS
+              (list 'end')
+    (fn (parsed) (prepend (get 1 parsed) (get 2 parsed))))
+  text
+))
+
+(defn main (text) (tryParseModule '(+ 2 5)'))
