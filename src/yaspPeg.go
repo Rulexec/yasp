@@ -1,4 +1,4 @@
-package main
+package yasp
 
 import (
   "fmt"
@@ -191,7 +191,7 @@ func (s *Stack) Evaluate(context *EvaluationContext) *Value {
         varName := expandedLet[2 * i].AssertIdType()
         varValue := expandedLet[2 * i + 1].Evaluate(newContext)
 
-        newContext.vars[varName] = varValue
+        newContext.Vars[varName] = varValue
       }
 
       return expanded[2].Evaluate(newContext)
@@ -520,7 +520,7 @@ func (s *Stack) Evaluate(context *EvaluationContext) *Value {
     }
     case "def": {
       key := expanded[1].AssertIdType()
-      context.vars[key] = expanded[2].Evaluate(context)
+      context.Vars[key] = expanded[2].Evaluate(context)
 
       return expanded[2]
     }
@@ -533,7 +533,7 @@ func (s *Stack) Evaluate(context *EvaluationContext) *Value {
 
       fun := CreateFunction(context, fnArgs, expanded[3])
 
-      context.vars[fnName] = fun
+      context.Vars[fnName] = fun
       return fun
     }
     case "list": {
@@ -559,7 +559,7 @@ func (v *Value) Evaluate(context *EvaluationContext) *Value {
   switch v.T {
   case TypeID: {
     key, _ := v.V.(string)
-    val, ok := context.vars[key]
+    val, ok := context.Vars[key]
 
     if ok { return val }
           { return v }
@@ -577,15 +577,15 @@ func (v *Value) EvaluateFunction(context *EvaluationContext, args []*Value) *Val
   fv := v.AssertFunctionType()
   argsCount := uint32(len(args))
   newContext := EmptyEvaluationContext()
-  for k, v := range fv.boundContext.vars {
-    newContext.vars[k] = v
+  for k, v := range fv.boundContext.Vars {
+    newContext.Vars[k] = v
   }
 
   if (argsCount != uint32(len(fv.argsNames))) { panic(fmt.Sprintf("argument count missmatch %v", args)) }
 
   for i, v := range args {
     xv := v.Evaluate(context)
-    newContext.vars[fv.argsNames[i]] = xv
+    newContext.Vars[fv.argsNames[i]] = xv
   }
 
   return fv.body.Evaluate(newContext)

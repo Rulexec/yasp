@@ -9,8 +9,8 @@ test: make
 yasp:
 	go build
 
-syntax.peg.go: syntax.peg
-	${GOPATH}/bin/peg -switch -inline syntax.peg
+syntax.peg.go: src/syntax.peg
+	${GOPATH}/bin/peg -switch -inline src/syntax.peg
 
 clean:
-	rm -f yasp syntax.peg.go
+	rm -f yasp src/syntax.peg.go

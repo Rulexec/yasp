@@ -6,18 +6,10 @@ import (
   "bufio"
   "os"
   "bytes"
-)
 
-func ParseAndEvaluate(expr string) *Value {
-  yaspPeg := &YaspPEG{Buffer: expr}
-  yaspPeg.Init()
-  yaspPeg.Parsing.Init()
-  if err := yaspPeg.Parse(); err != nil {
-    log.Fatal(err)
-  }
-  yaspPeg.Execute()
-	return yaspPeg.Evaluate(EmptyEvaluationContext())
-}
+  . "./src"
+  //. "./util"
+)
 
 func main() {
   var buffer bytes.Buffer
@@ -43,7 +35,7 @@ func main() {
 
   yaspPeg.Evaluate(context)
 
-  fmt.Printf("%v\n", context.vars["main"].EvaluateFunction(context, []*Value{&Value{T: TypeString, V: "  (+ 1 2)"}}))
+  fmt.Printf("%v\n", context.Vars["main"].EvaluateFunction(context, []*Value{&Value{T: TypeString, V: "  (+ 1 2)"}}))
 
   fmt.Print("done\n")
 }
