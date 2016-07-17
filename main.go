@@ -8,7 +8,7 @@ import (
   "bytes"
 )
 
-func parseAndEvaluate(expr string) *Value {
+func ParseAndEvaluate(expr string) *Value {
   yaspPeg := &YaspPEG{Buffer: expr}
   yaspPeg.Init()
   yaspPeg.Parsing.Init()
@@ -31,7 +31,6 @@ func main() {
 
   source := buffer.String()
 
-  //parseAndEvaluate(source)
   yaspPeg := &YaspPEG{Buffer: source}
   yaspPeg.Init()
   yaspPeg.Parsing.Init()

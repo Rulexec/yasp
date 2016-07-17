@@ -4,7 +4,7 @@ get-deps:
 	go get github.com/pointlander/peg
 
 test: make
-	go test
+	go test ./tests/...
 
 yasp:
 	go build
