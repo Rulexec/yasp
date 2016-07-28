@@ -7,7 +7,7 @@ test: make
 	go test ./tests/assertions.go ./tests/main_test.go
 
 yasp:
-	go build
+	go build ./cmd/yasp
 
 syntax.peg.go: src/syntax.peg
 	${GOPATH}/bin/peg -switch -inline src/syntax.peg

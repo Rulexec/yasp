@@ -7,7 +7,7 @@ import (
   "os"
   "bytes"
 
-  . "./src"
+  . "../.."
   //. "./util"
 )
 
